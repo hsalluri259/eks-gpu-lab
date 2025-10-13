@@ -1,9 +1,10 @@
-# k8s-gpu-lab
-This repo contains scripts and instructions to launch an EC2 instance with a GPU  to create a Kubernetes cluster for learning and experimentation.
-
-# Kubernetes GPU Lab with Terraform 🚀
-
-This repository provisions an AWS environment using **Terraform** to launch a GPU-enabled EC2 instance and set up a Kubernetes cluster for learning and experimentation.
+# eks-gpu-lab
+This repository provisions a complete AWS environment for learning and experimenting with Kubernetes on GPU-powered nodes.
+It uses Terraform to create:
+- A custom VPC
+- An IAM role with appropriate EKS access entries
+- An EKS cluster
+- An optional EC2 GPU instance to act as a worker node or for ML experimentation.
 
 ## 🎯 Goals
 - Provision AWS resources with Infrastructure as Code (IaC).
@@ -27,22 +28,44 @@ Before you begin, ensure you have:
 ---
 
 ## 📂 Repo Structure
+```bash
 eks-gpu-lab/
-├── main.tf
+├── modules/
+│   ├── vpc/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   │
+│   ├── iam/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   │
+│   ├── eks/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   └── nodegroup.tf
+│   │
+│   └── ec2/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── outputs.tf
+│
+├── main.tf              # Root Terraform entry point
 ├── variables.tf
 ├── outputs.tf
-└── versions.tf
+├── versions.tf
 └── README.md
 
-
 ---
-
+```
 ## ⚡ Quick Start
 
 ### 1. Clone the Repo
 ```bash
-git clone https://github.com/<your-username>/k8s-gpu-lab.git
-cd k8s-gpu-lab
+git clone https://github.com/<your-username>/eks-gpu-lab.git
+cd eks-gpu-lab
 ```
 
 ### 2: Prerequisites
@@ -52,16 +75,12 @@ Terraform uses your AWS credentials. Configure your CLI:
 ```bash
 aws configure --profile personal
 
-```
 Provide:
-
 AWS Access Key ID
-
 AWS Secret Key
-
 Default region (e.g., us-east-1)
-
 Default output format (json)
+```
 
 Verify:
 ```bash
@@ -80,12 +99,18 @@ terraform init
 ### 3. Plan the Infrastructure
 ```bash
 export AWS_PROFILE=personal
-terraform plan -var="key_name=<your-aws-keypair>"
+terraform plan -var-file terraform.tfvars
 ```
 
 ### 4. Apply and Launch
 ```bash
 terraform apply -var-file terraform.tfvars
+```
+
+### 5. Update your kubeconfig
+```bash
+aws --profile personal eks update-kubeconfig --region us-west-2 --name <cluster-name>
+kubectl get nodes
 ```
 
 ### 5. Connect to the EC2 GPU Instance
@@ -119,19 +144,4 @@ kubectl run gpu-test --rm -it \
 To avoid charges, always destroy resources when done:
 ```bash
 terraform destroy -auto-approve
-```
-
-### Verify Raw key-value pairs stored in etcd
-```bash
-export ETCDCTL_API=3
-export ETCDCTL_ENDPOINTS=https://127.0.0.1:2379
-export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt
-export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/server.crt
-export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/server.key
-
-# list all keys
-etcdctl get / --prefix --keys-only
-
-# list all pods in all namespaces
-etcdctl get /registry/pods/ --prefix --keys-only
 ```
