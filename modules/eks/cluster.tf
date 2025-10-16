@@ -9,7 +9,6 @@ module "eks" {
   vpc_id              = var.vpc_id
   subnet_ids          = var.subnet_ids
   authentication_mode = "API_AND_CONFIG_MAP"
-
   addons = {
     coredns = {}
     eks-pod-identity-agent = {
@@ -36,41 +35,44 @@ module "eks" {
       }
     }
   }
-  eks_managed_node_groups = {
-    # gpu_nodes = {
-    #   instance_types = ["g4dn.xlarge"] # NVIDIA T4 GPU instance
-    #   desired_size   = 1
-    #   min_size       = 1
-    #   max_size       = 2
-    #   capacity_type  = "ON_DEMAND"
 
-    #   labels = {
-    #     role = "gpu"
-    #   }
-    #   timeouts = {
-    #     create = "5m" # default is longer (~40m)
-    #     update = "5m"
-    #     delete = "5m"
-    #   }
-    # }
-    cpu_nodes = {
-      instance_types = ["t3.medium"]
-      desired_size   = 1
-      min_size       = 1
-      max_size       = 2
-      capacity_type  = "SPOT"
-
-      labels = {
-        role = "cpu"
+  eks_managed_node_groups = merge(
+    {
+      default = {
+        instance_types = ["t3.medium"]
+        min_size       = 1
+        max_size       = 3
+        desired_size   = 1
+        capacity_type  = "SPOT"
+        public_key     = "test"
+        labels = {
+          role = "default"
+        }
       }
-      timeouts = {
-        create = "10m" # default is longer (~40m)
-        update = "10m"
-        delete = "10m"
+    },
+    var.create_gpu_nodegroup ? {
+      gpu = {
+        instance_types                = ["g4dn.xlarge"]
+        min_size                      = 1
+        max_size                      = 1
+        desired_size                  = 1
+        capacity_type                 = "SPOT"
+        key_name                      = var.public_key
+        additional_security_group_ids = var.additional_security_group_ids
+        labels = {
+          role = "gpu"
+        }
+        # taints = [
+        #   {
+        #     key    = "nvidia.com/gpu"
+        #     value  = "true"
+        #     effect = "NO_SCHEDULE"
+        #   }
+        # ]
       }
-    }
+    } : {}
+  )
 
-  }
 
   # To access cluster objects via kubectl from your local machine without using a bastion host.
   endpoint_public_access = true
