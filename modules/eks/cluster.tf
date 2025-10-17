@@ -35,44 +35,97 @@ module "eks" {
       }
     }
   }
-
-  eks_managed_node_groups = merge(
-    {
-      default = {
-        instance_types = ["t3.medium"]
-        min_size       = 1
-        max_size       = 3
-        desired_size   = 1
-        capacity_type  = "SPOT"
-        public_key     = "test"
-        labels = {
-          role = "default"
-        }
+  eks_managed_node_groups = {
+    gpu_nodes = {
+      instance_types = ["g4dn.xlarge"] # NVIDIA T4 GPU instance
+      # https://github.com/awslabs/amazon-eks-ami/releases
+      # Copy AL2023_x86_64_NVIDIA from package for preinstalled NVIDIA toolkit
+      ami_type      = "AL2023_x86_64_NVIDIA"
+      desired_size  = 1
+      min_size      = 1
+      max_size      = 1
+      capacity_type = "SPOT"
+      # additional_security_group_ids = var.additional_security_group_ids
+      labels = {
+        role = "gpu"
       }
-    },
-    var.create_gpu_nodegroup ? {
-      gpu = {
-        instance_types                = ["g4dn.xlarge"]
-        min_size                      = 1
-        max_size                      = 1
-        desired_size                  = 1
-        capacity_type                 = "SPOT"
-        key_name                      = var.public_key
-        additional_security_group_ids = var.additional_security_group_ids
-        labels = {
-          role = "gpu"
-        }
-        # taints = [
-        #   {
-        #     key    = "nvidia.com/gpu"
-        #     value  = "true"
-        #     effect = "NO_SCHEDULE"
-        #   }
-        # ]
-      }
-    } : {}
-  )
+      # taints = {
+      #   gpu = {
+      #     key    = "nvidia.com/gpu"
+      #     value  = "true"
+      #     effect = "NO_SCHEDULE"
+      #   }
+      # }
 
+      timeouts = {
+        create = "20m" # default is longer (~40m)
+        update = "5m"
+        delete = "5m"
+      }
+    }
+    cpu_nodes = {
+      instance_types = ["t3.medium"]
+      desired_size   = 1
+      min_size       = 1
+      max_size       = 1
+      capacity_type  = "SPOT"
+
+      labels = {
+        role = "cpu"
+      }
+      timeouts = {
+        create = "10m" # default is longer (~40m)
+        update = "10m"
+        delete = "10m"
+      }
+    }
+
+  }
+  # eks_managed_node_groups = merge(
+  #   {
+  #     default = {
+  #       instance_types = ["t3.medium"]
+  #       min_size       = 1
+  #       max_size       = 3
+  #       desired_size   = 1
+  #       capacity_type  = "SPOT"
+  #       public_key     = "test"
+  #       labels = {
+  #         role = "default"
+  #       }
+  #     }
+  #   },
+  #   var.create_gpu_nodegroup ? {
+  #     gpu = {
+  #       instance_types = ["g4dn.xlarge"]
+  #       ami_id         = "ami-0b0424622e9841151"
+  #       min_size       = 1
+  #       max_size       = 1
+  #       desired_size   = 1
+  #       capacity_type  = "SPOT"
+  #       # key_name                      = var.public_key
+  #       additional_security_group_ids = var.additional_security_group_ids
+  #       labels = {
+  #         role = "gpu"
+  #       }
+  #       # taints = [
+  #       #   {
+  #       #     key    = "nvidia.com/gpu"
+  #       #     value  = "true"
+  #       #     effect = "NO_SCHEDULE"
+  #       #   }
+  #       # ]
+  #       timeouts = {
+  #         "create" : "15m"
+  #         "update" : "15m"
+  #         "delete" : "15m"
+  #       }
+  #     }
+  #   } : {}
+
+  # )
+  # whether to create a SG or not
+  # create_security_group = true
 
   # To access cluster objects via kubectl from your local machine without using a bastion host.
   endpoint_public_access = true

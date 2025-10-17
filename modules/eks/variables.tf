@@ -44,10 +44,10 @@ variable "create_gpu_nodegroup" {
   default     = true
 }
 
-variable "public_key" {
-  description = "Public key for SSH access to EC2"
-  type        = string
-}
+# variable "public_key" {
+#   description = "Public key for SSH access to EC2"
+#   type        = string
+# }
 
 variable "additional_security_group_ids" {
   description = "List of security group IDs to add to nodes"
