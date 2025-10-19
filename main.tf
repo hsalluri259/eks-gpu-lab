@@ -2,6 +2,7 @@ module "vpc" {
   source   = "./modules/vpc"
   name     = var.name
   vpc_cidr = var.vpc_cidr
+  my_ip    = var.my_ip
 }
 
 module "iam" {
@@ -17,9 +18,12 @@ module "eks-cluster" {
   count  = var.create_eks ? 1 : 0
   source = "./modules/eks"
 
-  name            = var.name
-  cluster_version = var.cluster_version
-  vpc_id          = module.vpc.vpc_id
-  subnet_ids      = module.vpc.private_subnets
-  role_arn        = module.iam[0].role_arn
+  name              = var.name
+  cluster_version   = var.cluster_version
+  vpc_id            = module.vpc.vpc_id
+  subnet_ids        = module.vpc.private_subnets
+  role_arn          = module.iam[0].role_arn
+  eks_node_role_arn = module.iam[0].eks_node_role_arn
+  # public_key                    = var.public_key
+  additional_security_group_ids = [module.vpc.eks_ssh_sg_id]
 }

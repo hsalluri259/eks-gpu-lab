@@ -9,7 +9,6 @@ module "eks" {
   vpc_id              = var.vpc_id
   subnet_ids          = var.subnet_ids
   authentication_mode = "API_AND_CONFIG_MAP"
-
   addons = {
     coredns = {}
     eks-pod-identity-agent = {
@@ -37,27 +36,38 @@ module "eks" {
     }
   }
   eks_managed_node_groups = {
-    # gpu_nodes = {
-    #   instance_types = ["g4dn.xlarge"] # NVIDIA T4 GPU instance
-    #   desired_size   = 1
-    #   min_size       = 1
-    #   max_size       = 2
-    #   capacity_type  = "ON_DEMAND"
+    gpu_nodes = {
+      instance_types = ["g4dn.xlarge"] # NVIDIA T4 GPU instance
+      # https://github.com/awslabs/amazon-eks-ami/releases
+      # Copy AL2023_x86_64_NVIDIA from package for preinstalled NVIDIA toolkit
+      ami_type      = "AL2023_x86_64_NVIDIA"
+      desired_size  = 1
+      min_size      = 1
+      max_size      = 1
+      capacity_type = "SPOT"
+      # additional_security_group_ids = var.additional_security_group_ids
+      labels = {
+        role = "gpu"
+      }
+      # taints = {
+      #   gpu = {
+      #     key    = "nvidia.com/gpu"
+      #     value  = "true"
+      #     effect = "NO_SCHEDULE"
+      #   }
+      # }
 
-    #   labels = {
-    #     role = "gpu"
-    #   }
-    #   timeouts = {
-    #     create = "5m" # default is longer (~40m)
-    #     update = "5m"
-    #     delete = "5m"
-    #   }
-    # }
+      timeouts = {
+        create = "20m" # default is longer (~40m)
+        update = "5m"
+        delete = "5m"
+      }
+    }
     cpu_nodes = {
       instance_types = ["t3.medium"]
       desired_size   = 1
       min_size       = 1
-      max_size       = 2
+      max_size       = 1
       capacity_type  = "SPOT"
 
       labels = {
