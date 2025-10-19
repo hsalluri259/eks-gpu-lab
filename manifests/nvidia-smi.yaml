@@ -10,7 +10,5 @@ spec:
     args:
     - "nvidia-smi"
     resources:
-      # requests:
-      #   nvidia.com/gpu: 0.5
       limits:
         nvidia.com/gpu: 1
