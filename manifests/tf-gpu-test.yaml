@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tf-gpu-test
+spec:
+  restartPolicy: Never
+  containers:
+  - name: tf-gpu
+    image: tensorflow/tensorflow:2.15.0-gpu
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+    command:
+      - bash
+      - -c
+      - |
+        python3 -c "
+import tensorflow as tf
+print('TensorFlow version:', tf.__version__)
+gpus = tf.config.list_physical_devices('GPU')
+print('GPUs Available:', gpus)
+if gpus:
+    with tf.device('/GPU:0'):
+        a = tf.random.normal([1000, 1000])
+        b = tf.random.normal([1000, 1000])
+        c = tf.matmul(a, b)
+        print('Matrix multiplication completed on GPU.')
+"
